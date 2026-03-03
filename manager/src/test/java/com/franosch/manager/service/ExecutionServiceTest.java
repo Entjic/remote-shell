@@ -41,7 +41,7 @@ class ExecutionServiceTest {
     void testSubmitExecutionQueuesTaskToAvailableWorker() {
         workerRegistry.registerWorker("worker-1", "http://localhost:8081", testCapacity);
 
-        ExecutionRequest request = new ExecutionRequest("echo hello", testCapacity);
+        ExecutionRequest request = new ExecutionRequest("echo hello", testCapacity, "123", "");
         var execution = executionService.submitExecution(request);
 
         assertThat(execution).isNotNull();
@@ -53,7 +53,7 @@ class ExecutionServiceTest {
 
     @Test
     void testSubmitExecutionThrowsWhenNoAvailableWorker() {
-        ExecutionRequest request = new ExecutionRequest("echo hello", testCapacity);
+        ExecutionRequest request = new ExecutionRequest("echo hello", testCapacity, "123", "");
 
         assertThatThrownBy(() -> executionService.submitExecution(request))
                 .isInstanceOf(RuntimeException.class)
@@ -64,7 +64,7 @@ class ExecutionServiceTest {
     void testGetExecution() {
         workerRegistry.registerWorker("worker-1", "http://localhost:8081", testCapacity);
 
-        ExecutionRequest request = new ExecutionRequest("echo hello", testCapacity);
+        ExecutionRequest request = new ExecutionRequest("echo hello", testCapacity, "123", "");
         var submitted = executionService.submitExecution(request);
 
         var retrieved = executionService.getExecution(submitted.getId());
@@ -82,7 +82,7 @@ class ExecutionServiceTest {
     void testUpdateExecutionStatus() {
         workerRegistry.registerWorker("worker-1", "http://localhost:8081", testCapacity);
 
-        ExecutionRequest request = new ExecutionRequest("echo hello", testCapacity);
+        ExecutionRequest request = new ExecutionRequest("echo hello", testCapacity, "123", "");
         var submitted = executionService.submitExecution(request);
 
         executionService.updateExecutionStatus(submitted.getId(), ExecutionStatus.IN_PROGRESS, null, null);
@@ -95,7 +95,7 @@ class ExecutionServiceTest {
     void testUpdateExecutionStatusWithResult() {
         workerRegistry.registerWorker("worker-1", "http://localhost:8081", testCapacity);
 
-        ExecutionRequest request = new ExecutionRequest("echo hello", testCapacity);
+        ExecutionRequest request = new ExecutionRequest("echo hello", testCapacity, "123", "");
         var submitted = executionService.submitExecution(request);
 
         executionService.updateExecutionStatus(
@@ -114,7 +114,7 @@ class ExecutionServiceTest {
     void testUpdateExecutionStatusWithError() {
         workerRegistry.registerWorker("worker-1", "http://localhost:8081", testCapacity);
 
-        ExecutionRequest request = new ExecutionRequest("echo hello", testCapacity);
+        ExecutionRequest request = new ExecutionRequest("echo hello", testCapacity, "123", "");
         var submitted = executionService.submitExecution(request);
 
         executionService.updateExecutionStatus(
@@ -135,7 +135,7 @@ class ExecutionServiceTest {
         workerRegistry.registerWorker("worker-2", "http://localhost:8082", testCapacity);
         workerRegistry.registerWorker("worker-3", "http://localhost:8083", testCapacity);
 
-        ExecutionRequest request = new ExecutionRequest("echo hello", testCapacity);
+        ExecutionRequest request = new ExecutionRequest("echo hello", testCapacity, "123", "");
 
         var exec1 = executionService.submitExecution(request);
         var exec2 = executionService.submitExecution(request);
@@ -152,7 +152,7 @@ class ExecutionServiceTest {
     void testSubmitExecutionWithoutResources() {
         workerRegistry.registerWorker("worker-1", "http://localhost:8081", testCapacity);
 
-        ExecutionRequest request = new ExecutionRequest("echo hello", null);
+        ExecutionRequest request = new ExecutionRequest("echo hello", null, "123", "");
         var execution = executionService.submitExecution(request);
 
         assertThat(execution).isNotNull();
