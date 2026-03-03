@@ -158,3 +158,11 @@ Common environment variables to configure in a deployed setup:
 | Worker    | WORKER_CPU_COUNT | 4                     | Number of CPUs the worker can use                 |
 | Worker    | WORKER_MEMORY_MB | 2048                  | Memory in MB available to the worker              |
 | Worker    | WORKER_SECRET    | s3cr3tKey             | Secret token matching the manager’s WORKER_SECRET |
+
+--- 
+
+## Build & Tests
+
+The project uses maven as build system. 
+Run tests using `mvn test`.
+Run tests and package `mvn package`
