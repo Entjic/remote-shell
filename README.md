@@ -24,34 +24,7 @@ The scheduling algorithm then disregards all workers that do not satisfy the use
 
 ## Architecture
 
-```plantuml
-@startuml
-skinparam backgroundColor #f9f9f9
-skinparam shadowing true
-skinparam ArrowColor #4a90e2
-skinparam BoxBorderColor #333
-skinparam BoxBackgroundColor #dfefff
-
-actor User as "User / CLI"
-
-rectangle "Manager\n- Queues tasks\n- Tracks workers\n- Updates task status" as Manager
-
-rectangle "Worker 1" as Worker1
-rectangle "Worker 2" as Worker2
-rectangle "Worker 3" as Worker3
-
-User --> Manager : Submit task
-User --> Manager : Poll for status
-
-Manager --> Worker1 : Assign task
-Manager --> Worker2 : Assign task
-Manager --> Worker3 : Assign task
-
-Worker1 --> Manager : Report status / result
-Worker2 --> Manager : Report status / result
-Worker3 --> Manager : Report status / result
-@enduml
-```
+![Architecture Diagram](remote-shell-architecture.png)
 
 Both the manager and worker are written using Java Spring Boot.
 The CLI is written in python.
