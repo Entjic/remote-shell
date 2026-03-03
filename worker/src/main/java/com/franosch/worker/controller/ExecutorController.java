@@ -7,7 +7,9 @@ import com.franosch.worker.service.CommandExecutor;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -15,13 +17,18 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.server.ResponseStatusException;
 
+@Slf4j
 @RestController
 @RequestMapping("executor/")
 public class ExecutorController {
 
     private final ManagerRegistry managerRegistry;
     private final RestTemplate restTemplate;
+
+    @Value("${worker.secret}")
+    private String secret;
 
     @Autowired
     public ExecutorController(ManagerRegistry managerRegistry, RestTemplate restTemplate) {
@@ -31,10 +38,15 @@ public class ExecutorController {
 
     @PostMapping("execute")
     public ResponseEntity<String> execute(@RequestBody ExecutionRequest request) {
+
+        if(!request.getSecret().equals(secret)){
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Wrong secret");
+        }
+
         try {
             // Extract execution ID from request header or generate one
-            String executionId = request.getCommand().hashCode() + "-" + System.nanoTime();
-
+            String executionId = request.getId();
+            log.info("[Execution {}]: {}", executionId, request.getCommand());
             // Update manager that execution is starting
             updateManagerStatus(executionId, ExecutionStatus.IN_PROGRESS);
 
@@ -47,12 +59,11 @@ public class ExecutorController {
                 return ResponseEntity.ok("Command executed successfully");
             } else {
                 updateManagerStatus(executionId, ExecutionStatus.FAILED, null, result.getError());
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                        .body("Command failed: " + result.getError());
+                 throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Command failed: " + result.getError());
             }
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error executing command: " + e.getMessage());
+            log.warn("[Execution {}] Internal error: {}", request.getId(), e.getMessage());
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Error executing command: " + e.getMessage());
         }
     }
 
@@ -70,7 +81,7 @@ public class ExecutorController {
 
             restTemplate.put(url, request);
         } catch (Exception e) {
-            System.err.println("Failed to update manager with status: " + e.getMessage());
+            log.error("Failed to update manager with status: {}", e.getMessage());
         }
     }
 

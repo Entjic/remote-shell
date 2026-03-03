@@ -2,6 +2,7 @@ package com.franosch.manager.service;
 
 import com.franosch.manager.model.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
@@ -13,6 +14,9 @@ public class ExecutionService {
     private final Map<String, Execution> executions = new ConcurrentHashMap<>();
     private final WorkerRegistry workerRegistry;
     private final RestTemplate restTemplate;
+
+    @Value("${worker.secret}")
+    private String secret;
 
     @Autowired
     public ExecutionService(WorkerRegistry workerRegistry, RestTemplate restTemplate) {
@@ -43,21 +47,18 @@ public class ExecutionService {
 
     private void sendCommandToWorker(Execution execution, WorkerInfo worker) {
         try {
-            workerRegistry.markWorkerBusy(worker.getId());
-
             String url = worker.getBaseUrl() + "/executor/execute";
-            ExecutionRequest request = new ExecutionRequest(execution.getCommand(), execution.getResources());
+            ExecutionRequest request = new ExecutionRequest(
+                    execution.getCommand(),
+                    execution.getResources(),
+                    execution.getId(),
+                    this.secret
+            );
+            restTemplate.postForObject(url, request, String.class);
 
-            // Send the command to worker
-            try {
-                restTemplate.postForObject(url, request, Void.class);
-            } catch (Exception e) {
-                System.err.println("Error sending command to worker: " + e.getMessage());
-                execution.setStatus(ExecutionStatus.FAILED);
-                execution.setError("Failed to send command to worker: " + e.getMessage());
-            }
-        } finally {
-            workerRegistry.markWorkerAvailable(worker.getId());
+        } catch (Exception e) {
+            execution.setStatus(ExecutionStatus.FAILED);
+            execution.setError("Failed to send command to worker: " + e.getMessage());
         }
     }
 

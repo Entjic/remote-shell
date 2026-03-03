@@ -1,25 +1,27 @@
 package com.franosch.manager.service;
 
+import com.franosch.manager.model.ResourceRequirements;
 import com.franosch.manager.model.WorkerInfo;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 
+@Slf4j
 @Service
 public class WorkerRegistry {
-    private final Map<String, WorkerInfo> workers = new ConcurrentHashMap<>();
+    private final Map<String, WorkerInfo> workers = Collections.synchronizedMap(new LinkedHashMap<>());
     private int roundRobinIndex = 0;
 
     public void registerWorker(String workerId, String baseUrl, com.franosch.manager.model.ResourceRequirements capacity) {
         WorkerInfo worker = new WorkerInfo(workerId, baseUrl, capacity);
         workers.put(workerId, worker);
-        System.out.println("Worker registered: " + workerId + " at " + baseUrl);
+        log.info("Worker registered: {} at {}", workerId, baseUrl);
     }
 
     public void deregisterWorker(String workerId) {
         workers.remove(workerId);
-        System.out.println("Worker deregistered: " + workerId);
+        log.info("Worker deregistered: {}", workerId);
     }
 
     public WorkerInfo getWorker(String workerId) {
@@ -31,30 +33,31 @@ public class WorkerRegistry {
     }
 
     public List<WorkerInfo> getAvailableWorkers() {
-        return workers.values().stream()
-                .filter(WorkerInfo::isAvailable)
-                .toList();
+        List<WorkerInfo> availableWorkers = new ArrayList<>();
+        for (WorkerInfo allWorker : this.getAllWorkers()) {
+            if (allWorker.isAvailable()) availableWorkers.add(allWorker);
+        }
+        return availableWorkers;
     }
 
-    public WorkerInfo getAvailableWorkerForCapacity(com.franosch.manager.model.ResourceRequirements requirements) {
-        List<WorkerInfo> available = getAvailableWorkers();
-        if (available.isEmpty()) {
-            return null;
-        }
+    public synchronized WorkerInfo getAvailableWorkerForCapacity(ResourceRequirements requirements) {
+        List<WorkerInfo> allWorkers = this.getAllWorkers();
+        int n = allWorkers.size();
+        if (n == 0) return null;
 
-        // Round-robin selection among available workers that meet requirements
-        for (int i = 0; i < available.size(); i++) {
-            int index = (roundRobinIndex + i) % available.size();
-            WorkerInfo worker = available.get(index);
-            if (canHandle(worker, requirements)) {
-                roundRobinIndex = (index + 1) % available.size();
+        for (int i = 0; i < n; i++) {
+            int index = (roundRobinIndex + i) % n;
+            WorkerInfo worker = allWorkers.get(index);
+
+            if (worker.isAvailable() && canHandle(worker, requirements)) {
+                roundRobinIndex = (index + 1) % n;
                 return worker;
             }
         }
         return null;
     }
 
-    private boolean canHandle(WorkerInfo worker, com.franosch.manager.model.ResourceRequirements requirements) {
+    private boolean canHandle(WorkerInfo worker, ResourceRequirements requirements) {
         if (requirements == null) {
             return true;
         }

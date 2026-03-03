@@ -10,4 +10,6 @@ import lombok.NoArgsConstructor;
 public class ExecutionRequest {
     private String command;
     private ResourceRequirements resources;
+    private String id;
+    private String secret;
 }
