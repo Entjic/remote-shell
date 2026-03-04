@@ -111,7 +111,7 @@ under http://manager-url/swagger-ui.html
 
 ---
 
-## Security & Deployment## Security & Deployment
+## Security & Deployment
 
 This setup allows arbitrary code execution, so take care when deploying.  
 Execution submissions from the manager to workers are guarded by `WORKER_SECRET`, which **must be overwritten in
